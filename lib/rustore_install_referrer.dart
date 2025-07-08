@@ -1,38 +1,15 @@
-// lib/rustore_install_referrer.dart
-
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:rustore_install_referrer/referrer_details.dart';
+import 'package:rustore_install_referrer/rustore_install_referrer_exception.dart';
+import 'package:rustore_install_referrer/rustore_referrer_details.dart';
 
-export 'package:rustore_install_referrer/referrer_details.dart';
-
-/// Exception that occurs when working with RuStore Install Referrer.
-class RuStoreInstallReferrerException implements Exception {
-  /// Error code.
-  final String code;
-  
-  /// Error message.
-  final String message;
-  
-  /// Additional error details.
-  final String? details;
-
-  RuStoreInstallReferrerException({
-    required this.code,
-    required this.message,
-    this.details,
-  });
-
-  @override
-  String toString() => 'RuStoreInstallReferrerException($code): $message'
-      '${details != null ? '\nDetails: $details' : ''}';
-}
+export 'package:rustore_install_referrer/rustore_referrer_details.dart';
 
 /// Main class for working with RuStore Install Referrer API.
-/// 
+///
 /// This class provides methods to get referrer information
 /// that is passed during app installation through RuStore advertising links.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// try {
@@ -45,35 +22,40 @@ class RuStoreInstallReferrerException implements Exception {
 ///   }
 /// }
 /// ```
-class RustoreInstallReferrer {
-  static const MethodChannel _channel = MethodChannel('rustore_install_referrer');
+class RuStoreInstallReferrer {
+  static const MethodChannel _channel = MethodChannel(
+    'rustore_install_referrer',
+  );
 
   /// Gets installation details from RuStore.
   ///
-  /// Returns [ReferrerDetails] on success.
+  /// Returns [RuStoreReferrerDetails] on success.
   ///
   /// Throws [RuStoreInstallReferrerException] on error:
-  /// - `REFERRER_NOT_FOUND`: Referrer not found (already requested, 
+  /// - `REFERRER_NOT_FOUND`: Referrer not found (already requested,
   ///   app installed without referrer, or expired).
   /// - `RU_STORE_NOT_INSTALLED`: RuStore not installed on device.
   /// - `RU_STORE_OUTDATED`: RuStore version is outdated.
   /// - `RU_STORE_ERROR`: General RuStore SDK error.
   /// - `UNKNOWN_ERROR`: Unknown error.
-  /// 
+  ///
   /// Important: Referrer can only be obtained once. Repeated calls
   /// will return `REFERRER_NOT_FOUND` error.
-  static Future<ReferrerDetails> getInstallReferrer() async {
+  static Future<RuStoreReferrerDetails> getInstallReferrer() async {
     try {
-      final Map<dynamic, dynamic>? result = await _channel.invokeMethod('getInstallReferrer');
-      
+      final Map<dynamic, dynamic>? result = await _channel.invokeMethod(
+        'getInstallReferrer',
+      );
+
       if (result == null) {
         throw RuStoreInstallReferrerException(
           code: 'REFERRER_NOT_FOUND',
-          message: 'Referrer is null. It might have been already consumed or expired.',
+          message:
+              'Referrer is null. It might have been already consumed or expired.',
         );
       }
-      
-      return ReferrerDetails.fromMap(result);
+
+      return RuStoreReferrerDetails.fromMap(result);
     } on PlatformException catch (e) {
       // Map exception class names to user-friendly codes
       final mappedCode = _mapExceptionCode(e.code);

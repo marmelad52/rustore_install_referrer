@@ -1,7 +1,10 @@
 name: rustore_install_referrer
-description: "A new Flutter plugin project."
-version: 0.0.1
-homepage:
+description: Flutter plugin for getting install referrer information from RuStore (Russian app store). Track app installations from advertising links and measure marketing campaigns effectiveness.
+version: 1.0.0
+homepage: https://github.com/marmelad52/rustore_install_referrer
+repository: https://github.com/marmelad52/rustore_install_referrer
+issue_tracker: https://github.com/marmelad52/rustore_install_referrer/issues
+documentation: https://github.com/marmelad52/rustore_install_referrer#readme
 
 environment:
   sdk: ^3.8.1
@@ -35,7 +38,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.example.rustore_install_referrer
+        package: io.github.marmelad52.rustore_install_referrer
         pluginClass: RustoreInstallReferrerPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

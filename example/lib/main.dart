@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:rustore_install_referrer/rustore_install_referrer.dart';
+import 'package:rustore_install_referrer/rustore_install_referrer_exception.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,9 +27,10 @@ class _MyAppState extends State<MyApp> {
     });
 
     try {
-      final details = await RustoreInstallReferrer.getInstallReferrer();
+      final details = await RuStoreInstallReferrer.getInstallReferrer();
       setState(() {
-        _result = 'Success!\n\n'
+        _result =
+            'Success!\n\n'
             'Package Name: ${details.packageName}\n'
             'Referrer ID: ${details.referrerId}\n'
             'Received Time: ${details.receivedTime}\n'
@@ -38,9 +40,10 @@ class _MyAppState extends State<MyApp> {
       });
     } on RuStoreInstallReferrerException catch (e) {
       setState(() {
-        _result = 'Error: ${e.code}\n\n'
+        _result =
+            'Error: ${e.code}\n\n'
             '${e.message}\n\n'
-            '${RustoreInstallReferrer.getErrorDescription(e.code)}';
+            '${RuStoreInstallReferrer.getErrorDescription(e.code)}';
       });
     } catch (e) {
       setState(() {
@@ -57,10 +60,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'RuStore Install Referrer Example',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: Scaffold(
         appBar: AppBar(
           title: const Text('RuStore Install Referrer'),

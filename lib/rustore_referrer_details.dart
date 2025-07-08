@@ -1,5 +1,5 @@
 /// Class containing install referrer details from RuStore.
-class ReferrerDetails {
+class RuStoreReferrerDetails {
   /// Package name of the app.
   final String packageName;
 
@@ -18,7 +18,7 @@ class ReferrerDetails {
   /// Can be null if the information is not available.
   final int? versionCode;
 
-  const ReferrerDetails({
+  const RuStoreReferrerDetails({
     required this.packageName,
     required this.referrerId,
     required this.receivedTimestamp,
@@ -26,9 +26,9 @@ class ReferrerDetails {
     this.versionCode,
   });
 
-  /// Creates a [ReferrerDetails] instance from a Map received from the native platform.
-  factory ReferrerDetails.fromMap(Map<dynamic, dynamic> map) {
-    return ReferrerDetails(
+  /// Creates a [RuStoreReferrerDetails] instance from a Map received from the native platform.
+  factory RuStoreReferrerDetails.fromMap(Map<dynamic, dynamic> map) {
+    return RuStoreReferrerDetails(
       packageName: map['packageName'] as String? ?? '',
       referrerId: map['referrerId'] as String? ?? '',
       receivedTimestamp: _safeLong(map['receivedTimestamp']),
@@ -92,7 +92,7 @@ class ReferrerDetails {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is ReferrerDetails &&
+    return other is RuStoreReferrerDetails &&
         other.packageName == packageName &&
         other.referrerId == referrerId &&
         other.receivedTimestamp == receivedTimestamp &&

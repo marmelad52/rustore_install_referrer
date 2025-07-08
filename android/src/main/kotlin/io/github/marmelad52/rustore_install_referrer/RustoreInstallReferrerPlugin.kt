@@ -1,4 +1,4 @@
-package com.example.rustore_install_referrer
+package io.github.marmelad52.rustore_install_referrer
 
 import android.content.Context
 import androidx.annotation.NonNull

@@ -1,4 +1,4 @@
-group = "com.example.rustore_install_referrer"
+group = "io.github.marmelad52.rustore_install_referrer"
 version = "1.0-SNAPSHOT"
 
 buildscript {
@@ -28,7 +28,7 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 android {
-    namespace = "com.example.rustore_install_referrer"
+    namespace = "io.github.marmelad52.rustore_install_referrer"
 
     compileSdk = 35
 

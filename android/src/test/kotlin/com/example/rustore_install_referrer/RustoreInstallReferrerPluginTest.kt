@@ -1,4 +1,4 @@
-package com.example.rustore_install_referrer
+package io.github.marmelad52.rustore_install_referrer
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
