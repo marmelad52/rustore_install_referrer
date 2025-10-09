@@ -9,29 +9,42 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import ru.rustore.sdk.install.referrer.model.InstallReferrer
 import ru.rustore.sdk.install.referrer.InstallReferrerClient
+import ru.rustore.sdk.install.referrer.model.AuthEvent
+import ru.rustore.sdk.install.referrer.model.PhoneNumber
 
 class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
     private lateinit var context: Context
+    private var client: InstallReferrerClient? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         context = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "rustore_install_referrer")
         channel.setMethodCallHandler(this)
+        
+        // Создаем клиент один раз при инициализации
+        client = InstallReferrerClient(context)
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-        if (call.method == "getInstallReferrer") {
-            getInstallReferrer(result)
-        } else {
-            result.notImplemented()
+        when (call.method) {
+            "getInstallReferrer" -> getInstallReferrer(result)
+            "sendAuthEvent" -> sendAuthEvent(call, result)
+            else -> result.notImplemented()
         }
     }
 
     private fun getInstallReferrer(result: Result) {
-        val client = InstallReferrerClient(context)
+        val referrerClient = client ?: run {
+            result.error(
+                "CLIENT_NOT_INITIALIZED",
+                "InstallReferrerClient not initialized",
+                null
+            )
+            return
+        }
 
-        client.getInstallReferrer()
+        referrerClient.getInstallReferrer()
             .addOnSuccessListener { referrer ->
                 if (referrer != null) {
                     // Return real fields from InstallReferrer
@@ -58,7 +71,64 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
             }
     }
 
+    private fun sendAuthEvent(call: MethodCall, result: Result) {
+        val referrerClient = client ?: run {
+            result.error(
+                "CLIENT_NOT_INITIALIZED",
+                "InstallReferrerClient not initialized",
+                null
+            )
+            return
+        }
+
+        // Получаем параметры из Dart
+        val phoneNumberStr = call.argument<String>("phoneNumber")
+        val authToken = call.argument<String>("authToken")
+
+        if (phoneNumberStr == null) {
+            result.error(
+                "MISSING_PHONE_NUMBER",
+                "Phone number is required",
+                null
+            )
+            return
+        }
+
+        if (authToken == null) {
+            result.error(
+                "MISSING_AUTH_TOKEN",
+                "Auth token is required",
+                null
+            )
+            return
+        }
+
+        try {
+            val phoneNumber = PhoneNumber(phoneNumberStr)
+            val authEvent = AuthEvent(phoneNumber, authToken)
+
+            referrerClient.sendAuthEvent(authEvent)
+                .addOnSuccessListener {
+                    result.success(true)
+                }
+                .addOnFailureListener { throwable ->
+                    result.error(
+                        throwable.javaClass.simpleName,
+                        throwable.message,
+                        null
+                    )
+                }
+        } catch (e: Exception) {
+            result.error(
+                "INVALID_PHONE_NUMBER",
+                "Failed to create PhoneNumber: ${e.message}",
+                null
+            )
+        }
+    }
+
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        client = null
     }
 }

@@ -1,491 +1,274 @@
 # RuStore Install Referrer
 
-**Language / Язык:** [🇺🇸 English](#english) | [🇷🇺 Русский](#russian)
+**Language:** [English](#english) | [Русский](#russian)
 
 ---
 
 ## English
 
-A Flutter plugin for getting install referrer information from RuStore (Russian app store). This plugin allows you to track app installations that came from advertising links and measure the effectiveness of your marketing campaigns.
+Flutter plugin for RuStore Install Referrer SDK (version 10.0.0). Track app installations from advertising links and measure marketing campaign effectiveness.
 
 ### Features
 
-- 🎯 Get install referrer information from RuStore
-- 📊 Track advertising campaign effectiveness
-- 🔒 Secure referrer retrieval with proper error handling
-- ⚡ Multiple API methods for different use cases
-- 🛡️ Safe methods that don't throw exceptions
-- ⏱️ Timeout support for network requests
-- 🔄 Automatic availability checking
-- 📱 Supports RuStore SDK 7.0.0+
+- Get install referrer information from RuStore
+- Track advertising campaign sources
+- VK Ads Full Stream Attribution support (v10.0.0+)
+- Comprehensive error handling
+- Supports RuStore SDK 10.0.0
 
 ### Installation
 
-Add this to your package's `pubspec.yaml` file:
-
 ```yaml
 dependencies:
-  rustore_install_referrer: ^1.0.0
-```
-
-Then run:
-
-```bash
-flutter pub get
+  rustore_install_referrer: ^2.0.0
 ```
 
 ### Android Setup
 
-#### 1. Add RuStore repository
+**Add RuStore repository** in `android/build.gradle`:
 
-**For build.gradle:**
 ```gradle
 allprojects {
     repositories {
         google()
         mavenCentral()
         maven {
-            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
+            url "https://artifactory-external.vkpartner.ru/artifactory/maven"
         }
     }
 }
 ```
 
-**For build.gradle.kts:**
-```kotlin
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven {
-            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
-        }
-    }
-}
-```
-
-#### 2. Add dependency
-
-**For build.gradle:**
-```gradle
-dependencies {
-    implementation("ru.rustore.sdk:installreferrer:7.0.0")
-}
-```
-
-**For build.gradle.kts:**
-```kotlin
-dependencies {
-    implementation("ru.rustore.sdk:installreferrer:7.0.0")
-}
-```
-
-#### 3. Minimum SDK version
-
-**For build.gradle.kts:**
-```kotlin
-android {
-    defaultConfig {
-        minSdk = 23
-        // ...
-    }
-}
-```
+**Requirements:**
+- Android SDK minimum 21
+- Kotlin 1.8+
 
 ### Usage
 
-#### Basic Usage
+#### Get Install Referrer
 
 ```dart
 import 'package:rustore_install_referrer/rustore_install_referrer.dart';
 
 try {
-  final details = await RustoreInstallReferrer.getInstallReferrer();
-  print('Install Referrer: ${details.installReferrer}');
-  print('Click Time: ${details.referrerClickTime}');
-  print('Install Time: ${details.installBeginTime}');
-  print('Has Referrer: ${details.hasReferrer}');
+  final details = await RuStoreInstallReferrer.getInstallReferrer();
+  
+  print('Referrer ID: ${details.referrerId}');
+  print('Package: ${details.packageName}');
+  print('Received: ${details.receivedTime}');
+  print('Installed: ${details.installAppTime}');
+  
 } on RuStoreInstallReferrerException catch (e) {
   print('Error: ${e.code} - ${e.message}');
 }
 ```
 
-#### Safe Usage (No Exceptions)
+#### Send Auth Event (VK Ads)
 
-```dart
-final result = await RustoreInstallReferrer.getInstallReferrerSafe();
-if (result.isSuccess) {
-  print('Referrer: ${result.referrerDetails!.installReferrer}');
-} else {
-  print('Error: ${result.error!.message}');
-}
-```
-
-#### Get Only Referrer String
-
-```dart
-final referrer = await RustoreInstallReferrer.getInstallReferrerString();
-print('Referrer: $referrer'); // Empty string if not available
-```
-
-#### Check RuStore Availability
-
-```dart
-final isAvailable = await RustoreInstallReferrer.isRuStoreAvailable();
-if (isAvailable) {
-  // RuStore is installed and supports Install Referrer API
-} else {
-  // RuStore is not available
-}
-```
-
-#### With Timeout
+New in v10.0.0 - send user phone number to VK Ads for attribution:
 
 ```dart
 try {
-  final details = await RustoreInstallReferrer.getInstallReferrerWithTimeout(
-    timeout: Duration(seconds: 5),
+  await RuStoreInstallReferrer.sendAuthEvent(
+    phoneNumber: '1234567890',
+    authToken: 'your_vk_ads_token',
   );
-  print('Referrer: ${details.installReferrer}');
 } on RuStoreInstallReferrerException catch (e) {
-  if (e.code == 'TIMEOUT') {
-    print('Request timed out');
-  }
+  print('Error: ${e.code}');
 }
 ```
+
+**Note:** Auth token must be obtained from your VK Ads manager.
 
 ### API Reference
 
-#### ReferrerDetails
+#### RuStoreReferrerDetails
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `installReferrer` | `String` | The referrer value from the advertising link |
-| `referrerClickTimestampSeconds` | `int` | When the user clicked the referrer link (device time) |
-| `installBeginTimestampSeconds` | `int` | When the app installation began (device time) |
-| `referrerClickTimestampServerSeconds` | `int` | When the user clicked the referrer link (server time) |
-| `installBeginTimestampServerSeconds` | `int` | When the app installation began (server time) |
-| `installVersion` | `String?` | App version when referrer was obtained |
+| `packageName` | `String` | App package name |
+| `referrerId` | `String` | Referrer ID from advertising link |
+| `receivedTimestamp` | `int` | When referrer was received (ms) |
+| `installAppTimestamp` | `int` | When installation began (ms) |
+| `versionCode` | `int?` | App version code |
 
-#### Available Methods
+#### Methods
 
 | Method | Description |
 |--------|-------------|
-| `getInstallReferrer()` | Main method, throws exceptions on error |
-| `getInstallReferrerSafe()` | Safe method, returns result object |
-| `getInstallReferrerString()` | Returns only referrer string |
-| `getInstallReferrerWithTimeout()` | With custom timeout |
-| `isRuStoreAvailable()` | Check if RuStore is available |
-| `isReferrerAlreadyConsumed()` | Check if referrer was already retrieved |
-| `getErrorDescription()` | Get human-readable error description |
+| `getInstallReferrer()` | Get referrer details |
+| `sendAuthEvent()` | Send auth event to VK Ads |
+| `getErrorDescription(code)` | Get error description |
 
-### Error Handling
+### Error Codes
 
-#### Exception Types
-
-The plugin throws `RuStoreInstallReferrerException` with the following error codes:
-
-| Error Code | Description |
-|------------|-------------|
-| `REFERRER_NOT_FOUND` | Referrer not found (already consumed, no referrer, or expired) |
-| `RU_STORE_NOT_INSTALLED` | RuStore is not installed on the device |
-| `RU_STORE_OUTDATED` | RuStore version is too old |
+| Code | Description |
+|------|-------------|
+| `REFERRER_NOT_FOUND` | Referrer not found or expired |
+| `RU_STORE_NOT_INSTALLED` | RuStore not installed |
+| `RU_STORE_OUTDATED` | RuStore version outdated |
 | `RU_STORE_ERROR` | General RuStore SDK error |
-| `TIMEOUT` | Request timed out |
-| `UNKNOWN_ERROR` | Unknown error occurred |
+| `MISSING_PHONE_NUMBER` | Phone number missing |
+| `MISSING_AUTH_TOKEN` | Auth token missing |
+| `INVALID_PHONE_NUMBER` | Invalid phone format |
 
-#### Example Error Handling
+### How It Works
 
-```dart
-try {
-  final details = await RustoreInstallReferrer.getInstallReferrer();
-  // Handle success
-} on RuStoreInstallReferrerException catch (e) {
-  switch (e.code) {
-    case 'REFERRER_NOT_FOUND':
-      print('No referrer available');
-      break;
-    case 'RU_STORE_NOT_INSTALLED':
-      print('Please install RuStore');
-      break;
-    case 'RU_STORE_OUTDATED':
-      print('Please update RuStore');
-      break;
-    default:
-      print('Error: ${e.message}');
-  }
-}
-```
-
-### How RuStore Install Referrer Works
-
-1. **Advertising Link**: User clicks on a RuStore advertising link like:
-   ```
-   https://www.rustore.ru/catalog/app/com.yourapp?referrerId=campaign123
-   ```
-
-2. **Installation**: When user installs the app, RuStore stores the `referrerId` value
-
-3. **Retrieval**: Your app can retrieve this referrer value using this plugin
-
-4. **One-time Use**: The referrer can only be retrieved once, then it's deleted
-
-5. **Expiration**: If not retrieved within 10 days, the referrer expires
+1. User clicks advertising link: `https://www.rustore.ru/catalog/app/com.example?referrerId=campaign123`
+2. RuStore stores the `referrerId` during installation
+3. Your app retrieves the referrer using this plugin
+4. Referrer can only be retrieved once
+5. Referrer expires after 10 days if not retrieved
 
 ### Important Notes
 
-- ⚠️ **One-time use**: Install referrer can only be retrieved once
-- ⏰ **Expiration**: Referrer data expires after 10 days
-- 📱 **RuStore required**: Requires RuStore to be installed on the device
-- 🔒 **Security**: Uses secure RuStore SDK for data retrieval
+- Referrer can only be obtained once
+- Expires after 10 days
+- Requires RuStore installed on device
+- Full Stream Attribution requires auth token from VK Ads
 
 ### Platform Support
 
-| Platform | Support |
-|----------|---------|
-| Android | ✅ |
-| iOS | ❌ (RuStore is Android-only) |
+- Android: Yes
+- iOS: No (RuStore is Android-only)
 
 ---
 
 ## Russian
 
-Flutter плагин для получения информации о Install Referrer из RuStore (российский магазин приложений). Этот плагин позволяет отслеживать установки приложений, которые пришли из рекламных ссылок, и измерять эффективность ваших маркетинговых кампаний.
+Flutter плагин для RuStore Install Referrer SDK (версия 10.0.0). Отслеживайте установки из рекламных ссылок и измеряйте эффективность маркетинговых кампаний.
 
 ### Возможности
 
-- 🎯 Получение информации о Install Referrer из RuStore
-- 📊 Отслеживание эффективности рекламных кампаний
-- 🔒 Безопасное получение referrer с корректной обработкой ошибок
-- ⚡ Несколько методов API для разных случаев использования
-- 🛡️ Безопасные методы, которые не выбрасывают исключения
-- ⏱️ Поддержка таймаутов для сетевых запросов
-- 🔄 Автоматическая проверка доступности
-- 📱 Поддержка RuStore SDK 7.0.0+
+- Получение информации о Install Referrer из RuStore
+- Отслеживание источников рекламных кампаний
+- Поддержка VK Реклама Full Stream Attribution (v10.0.0+)
+- Полная обработка ошибок
+- Поддержка RuStore SDK 10.0.0
 
 ### Установка
 
-Добавьте это в файл `pubspec.yaml` вашего проекта:
-
 ```yaml
 dependencies:
-  rustore_install_referrer: ^1.0.0
-```
-
-Затем выполните:
-
-```bash
-flutter pub get
+  rustore_install_referrer: ^2.0.0
 ```
 
 ### Настройка Android
 
-#### 1. Добавьте репозиторий RuStore
+**Добавьте репозиторий RuStore** в `android/build.gradle`:
 
-**Для build.gradle:**
 ```gradle
 allprojects {
     repositories {
         google()
         mavenCentral()
         maven {
-            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
+            url "https://artifactory-external.vkpartner.ru/artifactory/maven"
         }
     }
 }
 ```
 
-**Для build.gradle.kts:**
-```kotlin
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven {
-            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
-        }
-    }
-}
-```
-
-#### 2. Добавьте зависимость
-
-**Для build.gradle:**
-```gradle
-dependencies {
-    implementation("ru.rustore.sdk:installreferrer:7.0.0")
-}
-```
-
-**Для build.gradle.kts:**
-```kotlin
-dependencies {
-    implementation("ru.rustore.sdk:installreferrer:7.0.0")
-}
-```
-
-#### 3. Минимальная версия SDK
-
-**Для build.gradle.kts:**
-```kotlin
-android {
-    defaultConfig {
-        minSdk = 23
-        // ...
-    }
-}
-```
+**Требования:**
+- Android SDK минимум 21
+- Kotlin 1.8+
 
 ### Использование
 
-#### Базовое использование
+#### Получение Install Referrer
 
 ```dart
 import 'package:rustore_install_referrer/rustore_install_referrer.dart';
 
 try {
-  final details = await RustoreInstallReferrer.getInstallReferrer();
-  print('Install Referrer: ${details.installReferrer}');
-  print('Время клика: ${details.referrerClickTime}');
-  print('Время установки: ${details.installBeginTime}');
-  print('Есть Referrer: ${details.hasReferrer}');
+  final details = await RuStoreInstallReferrer.getInstallReferrer();
+  
+  print('Referrer ID: ${details.referrerId}');
+  print('Пакет: ${details.packageName}');
+  print('Получено: ${details.receivedTime}');
+  print('Установлено: ${details.installAppTime}');
+  
 } on RuStoreInstallReferrerException catch (e) {
   print('Ошибка: ${e.code} - ${e.message}');
 }
 ```
 
-#### Безопасное использование (без исключений)
+#### Отправка Auth Event (VK Реклама)
 
-```dart
-final result = await RustoreInstallReferrer.getInstallReferrerSafe();
-if (result.isSuccess) {
-  print('Referrer: ${result.referrerDetails!.installReferrer}');
-} else {
-  print('Ошибка: ${result.error!.message}');
-}
-```
-
-#### Получить только строку Referrer
-
-```dart
-final referrer = await RustoreInstallReferrer.getInstallReferrerString();
-print('Referrer: $referrer'); // Пустая строка если недоступен
-```
-
-#### Проверка доступности RuStore
-
-```dart
-final isAvailable = await RustoreInstallReferrer.isRuStoreAvailable();
-if (isAvailable) {
-  // RuStore установлен и поддерживает Install Referrer API
-} else {
-  // RuStore недоступен
-}
-```
-
-#### С таймаутом
+Новое в v10.0.0 - отправка номера телефона в VK Рекламу для атрибуции:
 
 ```dart
 try {
-  final details = await RustoreInstallReferrer.getInstallReferrerWithTimeout(
-    timeout: Duration(seconds: 5),
+  await RuStoreInstallReferrer.sendAuthEvent(
+    phoneNumber: '1234567890',
+    authToken: 'ваш_токен_vk_ads',
   );
-  print('Referrer: ${details.installReferrer}');
 } on RuStoreInstallReferrerException catch (e) {
-  if (e.code == 'TIMEOUT') {
-    print('Истекло время ожидания');
-  }
+  print('Ошибка: ${e.code}');
 }
 ```
+
+**Важно:** Токен авторизации необходимо получить у менеджера VK Рекламы.
 
 ### Справочник API
 
-#### ReferrerDetails
+#### RuStoreReferrerDetails
 
 | Свойство | Тип | Описание |
 |----------|-----|----------|
-| `installReferrer` | `String` | Значение referrer из рекламной ссылки |
-| `referrerClickTimestampSeconds` | `int` | Когда пользователь нажал на referrer ссылку (время устройства) |
-| `installBeginTimestampSeconds` | `int` | Когда началась установка приложения (время устройства) |
-| `referrerClickTimestampServerSeconds` | `int` | Когда пользователь нажал на referrer ссылку (время сервера) |
-| `installBeginTimestampServerSeconds` | `int` | Когда началась установка приложения (время сервера) |
-| `installVersion` | `String?` | Версия приложения при получении referrer |
+| `packageName` | `String` | Имя пакета приложения |
+| `referrerId` | `String` | ID реферера из рекламной ссылки |
+| `receivedTimestamp` | `int` | Время получения referrer (мс) |
+| `installAppTimestamp` | `int` | Время начала установки (мс) |
+| `versionCode` | `int?` | Версия приложения |
 
-#### Доступные методы
+#### Методы
 
 | Метод | Описание |
 |-------|----------|
-| `getInstallReferrer()` | Основной метод, выбрасывает исключения при ошибке |
-| `getInstallReferrerSafe()` | Безопасный метод, возвращает объект результата |
-| `getInstallReferrerString()` | Возвращает только строку referrer |
-| `getInstallReferrerWithTimeout()` | С пользовательским таймаутом |
-| `isRuStoreAvailable()` | Проверить доступность RuStore |
-| `isReferrerAlreadyConsumed()` | Проверить, был ли referrer уже получен |
-| `getErrorDescription()` | Получить читаемое описание ошибки |
+| `getInstallReferrer()` | Получить данные referrer |
+| `sendAuthEvent()` | Отправить auth событие в VK Рекламу |
+| `getErrorDescription(code)` | Получить описание ошибки |
 
-### Обработка ошибок
+### Коды ошибок
 
-#### Типы исключений
-
-Плагин выбрасывает `RuStoreInstallReferrerException` со следующими кодами ошибок:
-
-| Код ошибки | Описание |
-|------------|----------|
-| `REFERRER_NOT_FOUND` | Referrer не найден (уже использован, нет referrer или истек) |
-| `RU_STORE_NOT_INSTALLED` | RuStore не установлен на устройстве |
+| Код | Описание |
+|-----|----------|
+| `REFERRER_NOT_FOUND` | Referrer не найден или истек |
+| `RU_STORE_NOT_INSTALLED` | RuStore не установлен |
 | `RU_STORE_OUTDATED` | Версия RuStore устарела |
 | `RU_STORE_ERROR` | Общая ошибка RuStore SDK |
-| `TIMEOUT` | Истекло время ожидания |
-| `UNKNOWN_ERROR` | Произошла неизвестная ошибка |
+| `MISSING_PHONE_NUMBER` | Не указан номер телефона |
+| `MISSING_AUTH_TOKEN` | Не указан токен авторизации |
+| `INVALID_PHONE_NUMBER` | Неверный формат номера |
 
-#### Пример обработки ошибок
+### Как это работает
 
-```dart
-try {
-  final details = await RustoreInstallReferrer.getInstallReferrer();
-  // Обработка успеха
-} on RuStoreInstallReferrerException catch (e) {
-  switch (e.code) {
-    case 'REFERRER_NOT_FOUND':
-      print('Referrer недоступен');
-      break;
-    case 'RU_STORE_NOT_INSTALLED':
-      print('Пожалуйста, установите RuStore');
-      break;
-    case 'RU_STORE_OUTDATED':
-      print('Пожалуйста, обновите RuStore');
-      break;
-    default:
-      print('Ошибка: ${e.message}');
-  }
-}
-```
-
-### Как работает RuStore Install Referrer
-
-1. **Рекламная ссылка**: Пользователь нажимает на рекламную ссылку RuStore вида:
-   ```
-   https://www.rustore.ru/catalog/app/com.yourapp?referrerId=campaign123
-   ```
-
-2. **Установка**: Когда пользователь устанавливает приложение, RuStore сохраняет значение `referrerId`
-
-3. **Получение**: Ваше приложение может получить это значение referrer с помощью данного плагина
-
-4. **Однократное использование**: Referrer можно получить только один раз, затем он удаляется
-
-5. **Истечение**: Если не получить в течение 10 дней, referrer истекает
+1. Пользователь нажимает рекламную ссылку: `https://www.rustore.ru/catalog/app/com.example?referrerId=campaign123`
+2. RuStore сохраняет `referrerId` при установке
+3. Ваше приложение получает referrer через этот плагин
+4. Referrer можно получить только один раз
+5. Referrer истекает через 10 дней, если не получен
 
 ### Важные замечания
 
-- ⚠️ **Однократное использование**: Install referrer можно получить только один раз
-- ⏰ **Истечение**: Данные referrer истекают через 10 дней
-- 📱 **Требуется RuStore**: Необходим установленный RuStore на устройстве
-- 🔒 **Безопасность**: Использует безопасный RuStore SDK для получения данных
+- Referrer можно получить только один раз
+- Истекает через 10 дней
+- Требуется установленный RuStore на устройстве
+- Full Stream Attribution требует токен от VK Рекламы
 
 ### Поддержка платформ
 
-| Платформа | Поддержка |
-|-----------|-----------|
-| Android | ✅ |
-| iOS | ❌ (RuStore только для Android) |
+- Android: Да
+- iOS: Нет (RuStore только для Android)
+
+---
+
+## License
+
+MIT License
+
+## Links
+
+- [RuStore Documentation](https://www.rustore.ru/help/sdk/install-referrer)
+- [VK Ads](https://vk.com/ads)

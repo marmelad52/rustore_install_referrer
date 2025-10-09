@@ -1,28 +1,29 @@
 name: rustore_install_referrer
-description: Flutter plugin for getting install referrer information from RuStore (Russian app store). Track app installations from advertising links and measure marketing campaigns effectiveness.
-version: 1.0.0
+description: Flutter plugin for getting install referrer information from
+  RuStore (Russian app store). Track app installations from advertising links
+  and measure marketing campaigns effectiveness.
+version: 2.0.0
 homepage: https://github.com/marmelad52/rustore_install_referrer
 repository: https://github.com/marmelad52/rustore_install_referrer
 issue_tracker: https://github.com/marmelad52/rustore_install_referrer/issues
 documentation: https://github.com/marmelad52/rustore_install_referrer#readme
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.9.2
   flutter: '>=3.3.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
+  plugin_platform_interface: ^2.1.8
 
 dev_dependencies:
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
 # The following section is specific to Flutter packages.
 flutter:
   # This section identifies this Flutter project as a plugin project.
@@ -40,7 +41,6 @@ flutter:
       android:
         package: io.github.marmelad52.rustore_install_referrer
         pluginClass: RustoreInstallReferrerPlugin
-
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
@@ -51,7 +51,6 @@ flutter:
   #
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
-
   # To add custom fonts to your plugin package, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a

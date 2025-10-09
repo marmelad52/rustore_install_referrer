@@ -1,5 +1,3 @@
-// example/lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:rustore_install_referrer/rustore_install_referrer.dart';
@@ -17,19 +15,31 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _result = 'Press button to get install referrer';
-  bool _isLoading = false;
+  String _referrerResult = 'Press button to get install referrer';
+  String _authResult = 'Press button to send auth event';
+  bool _isLoadingReferrer = false;
+  bool _isLoadingAuth = false;
+
+  final _phoneController = TextEditingController(text: '1234567890');
+  final _tokenController = TextEditingController(text: 'your_auth_token');
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
 
   Future<void> _getInstallReferrer() async {
     setState(() {
-      _isLoading = true;
-      _result = 'Loading...';
+      _isLoadingReferrer = true;
+      _referrerResult = 'Loading...';
     });
 
     try {
       final details = await RuStoreInstallReferrer.getInstallReferrer();
       setState(() {
-        _result =
+        _referrerResult =
             'Success!\n\n'
             'Package Name: ${details.packageName}\n'
             'Referrer ID: ${details.referrerId}\n'
@@ -40,18 +50,50 @@ class _MyAppState extends State<MyApp> {
       });
     } on RuStoreInstallReferrerException catch (e) {
       setState(() {
-        _result =
+        _referrerResult =
             'Error: ${e.code}\n\n'
             '${e.message}\n\n'
             '${RuStoreInstallReferrer.getErrorDescription(e.code)}';
       });
     } catch (e) {
       setState(() {
-        _result = 'Unexpected error: $e';
+        _referrerResult = 'Unexpected error: $e';
       });
     } finally {
       setState(() {
-        _isLoading = false;
+        _isLoadingReferrer = false;
+      });
+    }
+  }
+
+  Future<void> _sendAuthEvent() async {
+    setState(() {
+      _isLoadingAuth = true;
+      _authResult = 'Sending...';
+    });
+
+    try {
+      await RuStoreInstallReferrer.sendAuthEvent(
+        phoneNumber: _phoneController.text.trim(),
+        authToken: _tokenController.text.trim(),
+      );
+      setState(() {
+        _authResult = 'Success! Auth event sent to VK Ads';
+      });
+    } on RuStoreInstallReferrerException catch (e) {
+      setState(() {
+        _authResult =
+            'Error: ${e.code}\n\n'
+            '${e.message}\n\n'
+            '${RuStoreInstallReferrer.getErrorDescription(e.code)}';
+      });
+    } catch (e) {
+      setState(() {
+        _authResult = 'Unexpected error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoadingAuth = false;
       });
     }
   }
@@ -63,90 +105,107 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('RuStore Install Referrer'),
+          title: const Text('RuStore Install Referrer v10.0.0'),
           backgroundColor: Colors.blue.shade100,
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _getInstallReferrer,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Get Install Referrer',
-                          style: TextStyle(fontSize: 16),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Install Referrer Section
+              const Text(
+                '1. Get Install Referrer',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _isLoadingReferrer ? null : _getInstallReferrer,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _isLoadingReferrer
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
                         ),
+                      )
+                    : const Text('Get Install Referrer'),
+              ),
+              const SizedBox(height: 12),
+              _buildResultBox(_referrerResult),
+              const SizedBox(height: 32),
+
+              // Full Stream Attribution Section
+              const Text(
+                '2. Full Stream Attribution (VK Ads)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(),
+                  hintText: '1234567890',
                 ),
-                const SizedBox(height: 30),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Text(
-                    _result,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'monospace',
-                    ),
-                    textAlign: TextAlign.left,
-                  ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _tokenController,
+                decoration: const InputDecoration(
+                  labelText: 'Auth Token (from VK Ads manager)',
+                  border: OutlineInputBorder(),
+                  hintText: 'your_auth_token',
                 ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ℹ️ About Install Referrer',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _isLoadingAuth ? null : _sendAuthEvent,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _isLoadingAuth
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
                         ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        '• Referrer can only be obtained once\n'
-                        '• Referrer expires after 10 days\n'
-                        '• Requires RuStore to be installed\n'
-                        '• Use try-catch to handle errors',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                      )
+                    : const Text('Send Auth Event'),
+              ),
+              const SizedBox(height: 12),
+              _buildResultBox(_authResult),
+              const SizedBox(height: 32),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildResultBox(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
       ),
     );
   }

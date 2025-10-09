@@ -72,6 +72,64 @@ class RuStoreInstallReferrer {
     }
   }
 
+  /// Sends authentication event to VK Ads Full Stream Attribution.
+  ///
+  /// This method allows sending user phone number to VK Ads system for
+  /// attribution purposes. Requires auth token from VK Ads manager.
+  ///
+  /// [phoneNumber] - User's phone number (digits only, e.g., "1234567890").
+  /// [authToken] - Authorization token from VK Ads manager.
+  ///
+  /// Returns `true` on successful submission.
+  ///
+  /// Throws [RuStoreInstallReferrerException] on error:
+  /// - `MISSING_PHONE_NUMBER`: Phone number not provided.
+  /// - `MISSING_AUTH_TOKEN`: Auth token not provided.
+  /// - `INVALID_PHONE_NUMBER`: Phone number format is invalid.
+  /// - `RU_STORE_NOT_INSTALLED`: RuStore not installed on device.
+  /// - `RU_STORE_OUTDATED`: RuStore version is outdated.
+  /// - `RU_STORE_ERROR`: General RuStore SDK error.
+  ///
+  /// Important: This feature is optional and requires explicit configuration.
+  /// Contact your VK Ads manager to obtain the auth token.
+  ///
+  /// Example:
+  /// ```dart
+  /// try {
+  ///   await RuStoreInstallReferrer.sendAuthEvent(
+  ///     phoneNumber: '1234567890',
+  ///     authToken: 'your_auth_token_from_vk_ads',
+  ///   );
+  ///   print('Auth event sent successfully');
+  /// } catch (e) {
+  ///   print('Failed to send auth event: $e');
+  /// }
+  /// ```
+  static Future<bool> sendAuthEvent({
+    required String phoneNumber,
+    required String authToken,
+  }) async {
+    try {
+      final result = await _channel.invokeMethod('sendAuthEvent', {
+        'phoneNumber': phoneNumber,
+        'authToken': authToken,
+      });
+      return result == true;
+    } on PlatformException catch (e) {
+      final mappedCode = _mapExceptionCode(e.code);
+      throw RuStoreInstallReferrerException(
+        code: mappedCode,
+        message: e.message ?? 'Unknown platform error',
+        details: e.details?.toString(),
+      );
+    } catch (e) {
+      throw RuStoreInstallReferrerException(
+        code: 'UNKNOWN_ERROR',
+        message: 'Unexpected error: $e',
+      );
+    }
+  }
+
   /// Maps native exception class names to user-friendly error codes.
   static String _mapExceptionCode(String exceptionClassName) {
     switch (exceptionClassName) {
@@ -81,6 +139,11 @@ class RuStoreInstallReferrer {
         return 'RU_STORE_OUTDATED';
       case 'RuStoreException':
         return 'RU_STORE_ERROR';
+      case 'CLIENT_NOT_INITIALIZED':
+      case 'MISSING_PHONE_NUMBER':
+      case 'MISSING_AUTH_TOKEN':
+      case 'INVALID_PHONE_NUMBER':
+        return exceptionClassName;
       default:
         return exceptionClassName; // Keep original for unknown exceptions
     }
@@ -103,6 +166,17 @@ class RuStoreInstallReferrer {
       case 'RU_STORE_ERROR':
         return 'An error occurred in RuStore SDK. '
             'Try repeating the request later.';
+      case 'MISSING_PHONE_NUMBER':
+        return 'Phone number is required for sending auth event.';
+      case 'MISSING_AUTH_TOKEN':
+        return 'Auth token is required for sending auth event. '
+            'Contact your VK Ads manager to obtain it.';
+      case 'INVALID_PHONE_NUMBER':
+        return 'Phone number format is invalid. '
+            'Use digits only (e.g., "1234567890").';
+      case 'CLIENT_NOT_INITIALIZED':
+        return 'Install Referrer client is not initialized. '
+            'This is an internal error, please report to the developer.';
       case 'UNKNOWN_ERROR':
         return 'An unknown error occurred. '
             'Contact the app developer.';
