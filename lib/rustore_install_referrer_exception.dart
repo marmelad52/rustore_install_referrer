@@ -2,10 +2,10 @@
 class RuStoreInstallReferrerException implements Exception {
   /// Error code.
   final String code;
-  
+
   /// Error message.
   final String message;
-  
+
   /// Additional error details.
   final String? details;
 
@@ -16,6 +16,7 @@ class RuStoreInstallReferrerException implements Exception {
   });
 
   @override
-  String toString() => 'RuStoreInstallReferrerException($code): $message'
+  String toString() =>
+      'RuStoreInstallReferrerException($code): $message'
       '${details != null ? '\nDetails: $details' : ''}';
 }
