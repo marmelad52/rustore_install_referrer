@@ -1,3 +1,12 @@
+## [2.0.1] - 2025-10-09
+
+### Fixed
+- Shortened `pubspec.yaml` description to meet pub.dev 180 character limit
+- Fixed code formatting to comply with Dart style guide
+- Achieved perfect 160/160 pub points score on pub.dev
+
+---
+
 ## [2.0.0] - 2025-10-09
 
 ### Changed
