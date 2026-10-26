@@ -18,12 +18,40 @@ class RuStoreReferrerDetails {
   /// Can be null if the information is not available.
   final int? versionCode;
 
+  /// `utm_source` value of the advertising link, if present.
+  final String? utmSource;
+
+  /// `utm_medium` value of the advertising link, if present.
+  final String? utmMedium;
+
+  /// `utm_campaign` value of the advertising link, if present.
+  final String? utmCampaign;
+
+  /// `utm_group` value of the advertising link, if present.
+  final String? utmGroup;
+
+  /// `utm_banner` value of the advertising link, if present.
+  final String? utmBanner;
+
+  /// `utm_content` value of the advertising link, if present.
+  final String? utmContent;
+
+  /// `utm_term` value of the advertising link, if present.
+  final String? utmTerm;
+
   const RuStoreReferrerDetails({
     required this.packageName,
     required this.referrerId,
     required this.receivedTimestamp,
     required this.installAppTimestamp,
     this.versionCode,
+    this.utmSource,
+    this.utmMedium,
+    this.utmCampaign,
+    this.utmGroup,
+    this.utmBanner,
+    this.utmContent,
+    this.utmTerm,
   });
 
   /// Creates a [RuStoreReferrerDetails] instance from a Map received from the native platform.
@@ -36,6 +64,13 @@ class RuStoreReferrerDetails {
       versionCode: map['versionCode'] != null
           ? _safeLong(map['versionCode'])
           : null,
+      utmSource: map['utmSource'] as String?,
+      utmMedium: map['utmMedium'] as String?,
+      utmCampaign: map['utmCampaign'] as String?,
+      utmGroup: map['utmGroup'] as String?,
+      utmBanner: map['utmBanner'] as String?,
+      utmContent: map['utmContent'] as String?,
+      utmTerm: map['utmTerm'] as String?,
     );
   }
 
@@ -56,6 +91,13 @@ class RuStoreReferrerDetails {
       'receivedTimestamp': receivedTimestamp,
       'installAppTimestamp': installAppTimestamp,
       'versionCode': versionCode,
+      'utmSource': utmSource,
+      'utmMedium': utmMedium,
+      'utmCampaign': utmCampaign,
+      'utmGroup': utmGroup,
+      'utmBanner': utmBanner,
+      'utmContent': utmContent,
+      'utmTerm': utmTerm,
     };
   }
 
@@ -86,7 +128,14 @@ class RuStoreReferrerDetails {
         'referrerId: $referrerId, '
         'receivedTime: $receivedTime, '
         'installAppTime: $installAppTime, '
-        'versionCode: $versionCode)';
+        'versionCode: $versionCode, '
+        'utmSource: $utmSource, '
+        'utmMedium: $utmMedium, '
+        'utmCampaign: $utmCampaign, '
+        'utmGroup: $utmGroup, '
+        'utmBanner: $utmBanner, '
+        'utmContent: $utmContent, '
+        'utmTerm: $utmTerm)';
   }
 
   @override
@@ -97,7 +146,14 @@ class RuStoreReferrerDetails {
         other.referrerId == referrerId &&
         other.receivedTimestamp == receivedTimestamp &&
         other.installAppTimestamp == installAppTimestamp &&
-        other.versionCode == versionCode;
+        other.versionCode == versionCode &&
+        other.utmSource == utmSource &&
+        other.utmMedium == utmMedium &&
+        other.utmCampaign == utmCampaign &&
+        other.utmGroup == utmGroup &&
+        other.utmBanner == utmBanner &&
+        other.utmContent == utmContent &&
+        other.utmTerm == utmTerm;
   }
 
   @override
@@ -108,6 +164,13 @@ class RuStoreReferrerDetails {
       receivedTimestamp,
       installAppTimestamp,
       versionCode,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmGroup,
+      utmBanner,
+      utmContent,
+      utmTerm,
     );
   }
 }

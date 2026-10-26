@@ -16,17 +16,22 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _referrerResult = 'Press button to get install referrer';
-  String _authResult = 'Press button to send auth event';
+  String _referrerV2Result = 'Press button to get install referrer (V2)';
+  String _authResult = 'Press button to send FSA event';
   bool _isLoadingReferrer = false;
+  bool _isLoadingReferrerV2 = false;
   bool _isLoadingAuth = false;
+  RuStoreFsaEventType _eventType = RuStoreFsaEventType.install;
 
   final _phoneController = TextEditingController(text: '1234567890');
   final _tokenController = TextEditingController(text: 'your_auth_token');
+  final _productIdController = TextEditingController(text: 'product_id');
 
   @override
   void dispose() {
     _phoneController.dispose();
     _tokenController.dispose();
+    _productIdController.dispose();
     super.dispose();
   }
 
@@ -46,6 +51,9 @@ class _MyAppState extends State<MyApp> {
             'Received Time: ${details.receivedTime}\n'
             'Install Time: ${details.installAppTime}\n'
             'Version Code: ${details.versionCode ?? 'N/A'}\n'
+            'UTM Source: ${details.utmSource ?? 'N/A'}\n'
+            'UTM Medium: ${details.utmMedium ?? 'N/A'}\n'
+            'UTM Campaign: ${details.utmCampaign ?? 'N/A'}\n'
             'Has Referrer: ${details.hasReferrer}';
       });
     } on RuStoreInstallReferrerException catch (e) {
@@ -66,19 +74,58 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _sendAuthEvent() async {
+  Future<void> _getInstallReferrerV2() async {
+    setState(() {
+      _isLoadingReferrerV2 = true;
+      _referrerV2Result = 'Loading...';
+    });
+
+    try {
+      final details = await RuStoreInstallReferrer.getInstallReferrerV2();
+      setState(() {
+        _referrerV2Result =
+            'Success!\n\n'
+            'Install Referrer: ${details.installReferrer}\n'
+            'Click Time: ${details.referrerClickTime}\n'
+            'Install Begin Time: ${details.installBeginTime}\n'
+            'Is From RuStore: ${details.isFromRuStore}\n'
+            'Has Referrer: ${details.hasReferrer}';
+      });
+    } on RuStoreInstallReferrerException catch (e) {
+      setState(() {
+        _referrerV2Result =
+            'Error: ${e.code}\n\n'
+            '${e.message}\n\n'
+            '${RuStoreInstallReferrer.getErrorDescription(e.code)}';
+      });
+    } catch (e) {
+      setState(() {
+        _referrerV2Result = 'Unexpected error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoadingReferrerV2 = false;
+      });
+    }
+  }
+
+  Future<void> _sendFsaEvent() async {
     setState(() {
       _isLoadingAuth = true;
       _authResult = 'Sending...';
     });
 
     try {
-      await RuStoreInstallReferrer.sendAuthEvent(
+      await RuStoreInstallReferrer.sendFsaEvent(
         phoneNumber: _phoneController.text.trim(),
         authToken: _tokenController.text.trim(),
+        eventType: _eventType,
+        productId: _eventType.requiresProductId
+            ? _productIdController.text.trim()
+            : null,
       );
       setState(() {
-        _authResult = 'Success! Auth event sent to VK Ads';
+        _authResult = 'Success! ${_eventType.value} event sent to VK Ads';
       });
     } on RuStoreInstallReferrerException catch (e) {
       setState(() {
@@ -105,7 +152,7 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('RuStore Install Referrer v10.0.0'),
+          title: const Text('RuStore Install Referrer v10.6.1'),
           backgroundColor: Colors.blue.shade100,
         ),
         body: SingleChildScrollView(
@@ -141,9 +188,37 @@ class _MyAppState extends State<MyApp> {
               _buildResultBox(_referrerResult),
               const SizedBox(height: 32),
 
+              // Install Referrer V2 Section
+              const Text(
+                '2. Get Install Referrer (V2)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _isLoadingReferrerV2 ? null : _getInstallReferrerV2,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _isLoadingReferrerV2
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('Get Install Referrer V2'),
+              ),
+              const SizedBox(height: 12),
+              _buildResultBox(_referrerV2Result),
+              const SizedBox(height: 32),
+
               // Full Stream Attribution Section
               const Text(
-                '2. Full Stream Attribution (VK Ads)',
+                '3. Full Stream Attribution (VK Ads)',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -166,8 +241,34 @@ class _MyAppState extends State<MyApp> {
                 ),
               ),
               const SizedBox(height: 12),
+              DropdownButtonFormField<RuStoreFsaEventType>(
+                initialValue: _eventType,
+                decoration: const InputDecoration(
+                  labelText: 'Event Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  for (final type in RuStoreFsaEventType.values)
+                    DropdownMenuItem(value: type, child: Text(type.value)),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => _eventType = value);
+                },
+              ),
+              if (_eventType.requiresProductId) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _productIdController,
+                  decoration: const InputDecoration(
+                    labelText: 'Product ID',
+                    border: OutlineInputBorder(),
+                    hintText: 'product_id',
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _isLoadingAuth ? null : _sendAuthEvent,
+                onPressed: _isLoadingAuth ? null : _sendFsaEvent,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -182,7 +283,7 @@ class _MyAppState extends State<MyApp> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text('Send Auth Event'),
+                    : const Text('Send FSA Event'),
               ),
               const SizedBox(height: 12),
               _buildResultBox(_authResult),

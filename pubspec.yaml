@@ -1,6 +1,6 @@
 name: rustore_install_referrer
 description: Flutter plugin for RuStore install referrer API. Track app installations and measure marketing campaign effectiveness.
-version: 2.0.1 
+version: 2.1.0
 homepage: https://github.com/marmelad52/rustore_install_referrer
 repository: https://github.com/marmelad52/rustore_install_referrer
 issue_tracker: https://github.com/marmelad52/rustore_install_referrer/issues

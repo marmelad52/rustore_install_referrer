@@ -1,3 +1,25 @@
+## [2.1.0] - 2026-10-26
+
+### Changed
+- Updated RuStore Install Referrer SDK from 10.0.0 to 10.6.1
+- RuStore Maven repository moved to `https://nexus-external.rustore.ru/repository/maven-rustore-exposed`
+  (the old `artifactory-external.vkpartner.ru` no longer serves the SDK). Update the repository URL in your Android project
+- Minimum Android SDK is now 23, as required by the RuStore SDK (the plugin previously declared 21)
+- `sendAuthEvent()` is deprecated: SDK 10.6.1 removed `AuthEvent` in favour of typed FSA events. It still works and now sends an `install` FSA event
+
+### Added
+- `getInstallReferrerV2()` and `RuStoreReferrerDetailsV2` (timestamps in seconds, server timestamps, `isFromRuStore`)
+- `sendFsaEvent()` and `RuStoreFsaEventType` (`install`, `viewOffer`, `addToCart`, `purchase`, `addToWishlist`)
+- `isReferrerServiceAvailable()` and `getDebugInfo()`
+- UTM fields in `RuStoreReferrerDetails` (`utmSource`, `utmMedium`, `utmCampaign`, `utmGroup`, `utmBanner`, `utmContent`, `utmTerm`)
+- Error codes: `CLIENT_NOT_CREATED`, `MISSING_PRODUCT_ID`, `INVALID_EVENT_TYPE`
+
+### Fixed
+- `getInstallReferrer()` now throws `REFERRER_NOT_FOUND` when there is no referrer; previously the error was wrapped into `UNKNOWN_ERROR`
+- SDK `InvalidPhoneNumberException` is mapped to `INVALID_PHONE_NUMBER`
+
+---
+
 ## [2.0.1] - 2025-10-09
 
 ### Fixed

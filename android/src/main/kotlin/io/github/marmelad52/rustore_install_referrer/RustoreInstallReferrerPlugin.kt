@@ -7,9 +7,9 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import ru.rustore.sdk.install.referrer.model.InstallReferrer
 import ru.rustore.sdk.install.referrer.InstallReferrerClient
-import ru.rustore.sdk.install.referrer.model.AuthEvent
+import ru.rustore.sdk.install.referrer.model.FsaEvent
+import ru.rustore.sdk.install.referrer.model.FsaEventType
 import ru.rustore.sdk.install.referrer.model.PhoneNumber
 
 class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
@@ -21,7 +21,7 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
         context = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "rustore_install_referrer")
         channel.setMethodCallHandler(this)
-        
+
         // Создаем клиент один раз при инициализации
         client = InstallReferrerClient(context)
     }
@@ -29,20 +29,17 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
         when (call.method) {
             "getInstallReferrer" -> getInstallReferrer(result)
+            "getInstallReferrerV2" -> getInstallReferrerV2(result)
             "sendAuthEvent" -> sendAuthEvent(call, result)
+            "sendFsaEvent" -> sendFsaEvent(call, result)
+            "isReferrerServiceAvailable" -> isReferrerServiceAvailable(result)
+            "getDebugInfo" -> getDebugInfo(result)
             else -> result.notImplemented()
         }
     }
 
     private fun getInstallReferrer(result: Result) {
-        val referrerClient = client ?: run {
-            result.error(
-                "CLIENT_NOT_INITIALIZED",
-                "InstallReferrerClient not initialized",
-                null
-            )
-            return
-        }
+        val referrerClient = client ?: return clientNotInitialized(result)
 
         referrerClient.getInstallReferrer()
             .addOnSuccessListener { referrer ->
@@ -53,7 +50,14 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
                         "referrerId" to referrer.referrerId,
                         "receivedTimestamp" to referrer.receivedTimestamp,
                         "installAppTimestamp" to referrer.installAppTimestamp,
-                        "versionCode" to referrer.versionCode
+                        "versionCode" to referrer.versionCode,
+                        "utmSource" to referrer.utmSource,
+                        "utmMedium" to referrer.utmMedium,
+                        "utmCampaign" to referrer.utmCampaign,
+                        "utmGroup" to referrer.utmGroup,
+                        "utmBanner" to referrer.utmBanner,
+                        "utmContent" to referrer.utmContent,
+                        "utmTerm" to referrer.utmTerm
                     )
                     result.success(referrerData)
                 } else {
@@ -71,15 +75,79 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
             }
     }
 
+    private fun getInstallReferrerV2(result: Result) {
+        val referrerClient = client ?: return clientNotInitialized(result)
+
+        referrerClient.getInstallReferrerV2()
+            .addOnSuccessListener { referrer ->
+                if (referrer != null) {
+                    val referrerData = mapOf<String, Any?>(
+                        "installReferrer" to referrer.installReferrer,
+                        "referrerClickTimestampSeconds" to referrer.referrerClickTimestampSeconds,
+                        "installBeginTimestampSeconds" to referrer.installBeginTimestampSeconds,
+                        "referrerClickTimestampServerSeconds" to referrer.referrerClickTimestampServerSeconds,
+                        "installBeginTimestampServerSeconds" to referrer.installBeginTimestampServerSeconds,
+                        "googlePlayInstant" to referrer.googlePlayInstant,
+                        "isFromRuStore" to referrer.isFromRuStore
+                    )
+                    result.success(referrerData)
+                } else {
+                    // Return null, let Dart handle it
+                    result.success(null)
+                }
+            }
+            .addOnFailureListener { throwable ->
+                result.error(
+                    throwable.javaClass.simpleName,
+                    throwable.message,
+                    null
+                )
+            }
+    }
+
+    /**
+     * Legacy entry point. SDK 10.6.1 removed AuthEvent/sendAuthEvent in favour of
+     * FsaEvent/sendFsaEvent, so the call is forwarded as an `install` FSA event.
+     */
     private fun sendAuthEvent(call: MethodCall, result: Result) {
-        val referrerClient = client ?: run {
-            result.error(
-                "CLIENT_NOT_INITIALIZED",
-                "InstallReferrerClient not initialized",
-                null
-            )
-            return
+        dispatchFsaEvent(call, result, FsaEventType.Install)
+    }
+
+    private fun sendFsaEvent(call: MethodCall, result: Result) {
+        val eventType = when (val eventTypeName = call.argument<String>("eventType") ?: "install") {
+            "install" -> FsaEventType.Install
+            "viewOffer", "addToCart", "purchase", "addToWishlist" -> {
+                val productId = call.argument<String>("productId")
+                if (productId.isNullOrEmpty()) {
+                    result.error(
+                        "MISSING_PRODUCT_ID",
+                        "Product ID is required for event type '$eventTypeName'",
+                        null
+                    )
+                    return
+                }
+                when (eventTypeName) {
+                    "viewOffer" -> FsaEventType.ViewOffer(productId)
+                    "addToCart" -> FsaEventType.AddToCart(productId)
+                    "purchase" -> FsaEventType.Purchase(productId)
+                    else -> FsaEventType.AddToWishlist(productId)
+                }
+            }
+            else -> {
+                result.error(
+                    "INVALID_EVENT_TYPE",
+                    "Unknown FSA event type: $eventTypeName",
+                    null
+                )
+                return
+            }
         }
+
+        dispatchFsaEvent(call, result, eventType)
+    }
+
+    private fun dispatchFsaEvent(call: MethodCall, result: Result, eventType: FsaEventType) {
+        val referrerClient = client ?: return clientNotInitialized(result)
 
         // Получаем параметры из Dart
         val phoneNumberStr = call.argument<String>("phoneNumber")
@@ -105,9 +173,9 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
 
         try {
             val phoneNumber = PhoneNumber(phoneNumberStr)
-            val authEvent = AuthEvent(phoneNumber, authToken)
+            val fsaEvent = FsaEvent(phoneNumber, authToken, eventType)
 
-            referrerClient.sendAuthEvent(authEvent)
+            referrerClient.sendFsaEvent(fsaEvent)
                 .addOnSuccessListener {
                     result.success(true)
                 }
@@ -125,6 +193,34 @@ class RustoreInstallReferrerPlugin: FlutterPlugin, MethodCallHandler {
                 null
             )
         }
+    }
+
+    private fun isReferrerServiceAvailable(result: Result) {
+        val referrerClient = client ?: return clientNotInitialized(result)
+
+        try {
+            result.success(referrerClient.isReferrerServiceAvailable())
+        } catch (e: Exception) {
+            result.error(e.javaClass.simpleName, e.message, null)
+        }
+    }
+
+    private fun getDebugInfo(result: Result) {
+        val referrerClient = client ?: return clientNotInitialized(result)
+
+        try {
+            result.success(referrerClient.getDebugInfo())
+        } catch (e: Exception) {
+            result.error(e.javaClass.simpleName, e.message, null)
+        }
+    }
+
+    private fun clientNotInitialized(result: Result) {
+        result.error(
+            "CLIENT_NOT_INITIALIZED",
+            "InstallReferrerClient not initialized",
+            null
+        )
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {

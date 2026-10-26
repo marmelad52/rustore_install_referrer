@@ -2,9 +2,9 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // ДОБАВЛЯЕМ ЭТОТ БЛОК
+        // RuStore SDK repository
         maven {
-            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
+            url = uri("https://nexus-external.rustore.ru/repository/maven-rustore-exposed")
         }
     }
 }
